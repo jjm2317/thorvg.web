@@ -36,15 +36,24 @@
           <label for="frameRange">Frame</label>
           <input type="range" id="frameRange" min="1" max="100" step="1" value="1" onchange="seekFrame(this.value)">
         </div>
+        <input type="text"/>
       </div>
 
       <div class="lottie"></div>
     </div>
-    <script>
-      let animation;
-      window.onload = function() {
-        createAnimation();
+    <style>
+
+      .lottie {
+        display: flex;
+        flex-wrap: wrap;
       }
+    </style>
+    <script>
+      const initAnimation = (count = 1) => {
+
+      
+      let animation;
+      createAnimation();
 
       function createAnimation() {
         if (animation) {
@@ -54,12 +63,16 @@
 
         const lottie = document.querySelector('.lottie');
         animation = document.createElement('lottie-player');
-
+        animation.renderConfig = {renderer: "wg"}
+        animation.wasmUrl = "../dist/thorvg-wasm.wasm"
         animation.autoPlay = true;
         animation.loop = true;
         animation.src = "https://lottie.host/6d7dd6e2-ab92-4e98-826a-2f8430768886/NGnHQ6brWA.json";
-        animation.style.width = "500px";
-        animation.style.height = "500px";
+        animation.style.width = "100px";
+        animation.style.height = "50px";
+        
+
+        console.log(count);
 
         lottie.appendChild(animation);
 
@@ -161,6 +174,18 @@
 
         animation.save(ext);
       }
+      // setInterval(() => {
+      //   console.log(123)
+      //   animation.resize(200, 200)
+      // },1000)
+    }
+    window.onload = function () {
+      for(let i = 0; i < 10; i ++) {
+        initAnimation();
+
+      }
+
+    }
   </script>
   </body>
 </html>

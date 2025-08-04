@@ -1,0 +1,14 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "description": "이 디렉토리에는 [lottie-web](https://github.com/airbnb/lottie-web) 라이브러리를 사용한 다양한 예제들이 포함되어 있습니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lottie-web": "^5.13.0"
+  }
+}

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lottie Web Player</title>
+    <meta name="description" content="A web lottie player using lottie-web library" />
+    <script src="./node_modules/lottie-web/build/player/lottie_canvas.js"></script>
+    <!-- <script src="./node_modules/lottie-web/build/player/lottie.js"></script> -->
+  </head>
+  <body>
+    <div>
+      <div>
+        <button onclick="playAnimation()">Play</button>
+        <button onclick="pauseAnimation()">Pause</button>
+        <button onclick="stopAnimation()">Stop</button>
+        <button onclick="createAnimation()">Create</button>
+        <button onclick="destroyAnimation()">Destroy</button>
+        <button onclick="exportSVG()">Export SVG</button>
+        <button onclick="exportCanvas()">Export Canvas</button>
+        <div>
+          <label for="reverseCheckbox">Reverse</label>
+          <input type="checkbox" id="reverseCheckbox" onchange="toggleReverse(event)">
+        </div>
+          
+        <div>
+          <label for="loopCheckbox">Loop</label>
+          <input type="checkbox" id="loopCheckbox" onchange="toggleLoop(event)" checked>
+        </div>
+        
+        <div>
+          <label for="speedRange">Speed</label>
+          <input type="range" id="speedRange" min="0.1" max="2" step="0.1" value="1" onchange="changeSpeed(this.value)">
+        </div>
+        
+        <div>
+          <label for="frameRange">Frame</label>
+          <input type="range" id="frameRange" min="1" max="100" step="1" value="1" onchange="seekFrame(this.value)">
+        </div>
+        <input type="text" id="animationUrl" placeholder="Animation URL" value="https://lottie.host/6d7dd6e2-ab92-4e98-826a-2f8430768886/NGnHQ6brWA.json"/>
+      </div>
+
+      <div id="lottie-container"></div>
+    </div>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      
+      button {
+        margin: 5px;
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      
+      button:hover {
+        background-color: #0056b3;
+      }
+      
+      #lottie-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      
+
+      input[type="range"] {
+        width: 200px;
+        margin: 0 10px;
+      }
+      
+      label {
+        margin-right: 10px;
+      }
+      
+      #animationUrl {
+        width: 400px;
+        padding: 8px;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+    </style>
+    <script>
+      let animations = [];
+      let animationCount = 0;
+      
+      // lottie-web의 전역 메서드들
+      const lottie = window.lottie;
+    //   lottie.useWebWorker(true);
+      
+      
+      
+      function createAnimation() {
+        const container = document.getElementById('lottie-container');
+        const urlInput = document.getElementById('animationUrl');
+        const animationUrl = urlInput.value.trim();
+        
+        if (!animationUrl) {
+          alert('애니메이션 URL을 입력해주세요');
+          return;
+        }
+        
+        // 새로운 애니메이션 컨테이너 생성
+        const animationDiv = document.createElement('div');
+        animationDiv.className = 'animation-item';
+        animationDiv.style.width = '50px';
+        animationDiv.style.height = '50px';
+        animationDiv.id = `animation-${animationCount}`;
+        
+        container.appendChild(animationDiv);
+        
+        // lottie 애니메이션 로드
+        const animation = lottie.loadAnimation({
+          container: animationDiv,
+          renderer: 'canvas',
+          loop: true,
+          autoplay: true,
+          path: animationUrl
+        });
+        
+        // 애니메이션 객체 저장
+        animations.push({
+          id: animationCount,
+          instance: animation,
+          container: animationDiv
+        });
+        
+        animationCount++;
+        
+        // 프레임 업데이트 이벤트 리스너
+        animation.addEventListener('enterFrame', function(e) {
+          const frameRange = document.getElementById('frameRange');
+          if (frameRange) {
+            const progress = (e.currentTime / animation.totalFrames) * 100;
+            frameRange.value = progress;
+          }
+        });
+        
+        console.log(`애니메이션 ${animationCount} 생성됨`);
+      }
+      
+      function playAnimation() {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.play();
+        });
+      }
+      
+      function pauseAnimation() {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.pause();
+        });
+      }
+      
+      function stopAnimation() {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.stop();
+        });
+      }
+      
+      function seekFrame(framePercentage) {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          const frame = (anim.instance.totalFrames * framePercentage) / 100;
+          anim.instance.goToAndStop(frame, true);
+        });
+      }
+      
+      function destroyAnimation() {
+        if (animations.length === 0) {
+          alert('삭제할 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.destroy();
+          anim.container.remove();
+        });
+        
+        animations = [];
+        animationCount = 0;
+        console.log('모든 애니메이션이 삭제되었습니다');
+      }
+      
+      function toggleLoop(e) {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.loop = e.target.checked;
+        });
+      }
+      
+      function changeSpeed(speed) {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.setSpeed(speed);
+        });
+      }
+      
+      function toggleReverse(e) {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach(anim => {
+          anim.instance.setDirection(e.target.checked ? -1 : 1);
+        });
+      }
+      
+      function exportSVG() {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        animations.forEach((anim, index) => {
+          const svgElement = anim.container.querySelector('svg');
+          if (svgElement) {
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `animation-${index}.svg`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+          }
+        });
+      }
+      
+      function exportCanvas() {
+        if (animations.length === 0) {
+          alert('생성된 애니메이션이 없습니다');
+          return;
+        }
+        
+        // Canvas 렌더러로 변경하여 내보내기
+        animations.forEach((anim, index) => {
+          // 임시 canvas 생성
+          const canvas = document.createElement('canvas');
+          canvas.width = 200;
+          canvas.height = 200;
+          const ctx = canvas.getContext('2d');
+          
+          // 현재 프레임을 canvas에 그리기
+          const svgElement = anim.container.querySelector('svg');
+          if (svgElement) {
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const img = new Image();
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+              ctx.drawImage(img, 0, 0, 200, 200);
+              canvas.toBlob(function(blob) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `animation-${index}.png`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+              });
+              URL.revokeObjectURL(url);
+            };
+            img.src = url;
+          }
+        });
+      }
+      
+      // 페이지 로드 시 초기 애니메이션 생성
+      window.onload = function() {
+        // 기본 애니메이션 생성
+        for(animationCount = 0; animationCount < 1000; animationCount ++ ) {
+            createAnimation();
+
+        }
+      };
+      
+      // 전역 함수로 노출
+      window.playAnimation = playAnimation;
+      window.pauseAnimation = pauseAnimation;
+      window.stopAnimation = stopAnimation;
+      window.createAnimation = createAnimation;
+      window.destroyAnimation = destroyAnimation;
+      window.exportSVG = exportSVG;
+      window.exportCanvas = exportCanvas;
+      window.toggleLoop = toggleLoop;
+      window.changeSpeed = changeSpeed;
+      window.toggleReverse = toggleReverse;
+      window.seekFrame = seekFrame;
+    </script>
+  </body>
+</html> 

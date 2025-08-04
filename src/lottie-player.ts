@@ -481,22 +481,26 @@ export class LottiePlayer extends LitElement {
     this._TVG.resize(this._canvas!.width, this._canvas!.height);
     this._viewport();
     const isUpdated = this._TVG.update();
+    console.log('render 1');
 
     if (!isUpdated) {
       return;
     }
-
+    console.log('render 2');
+    
     // webgpu & webgl
     if (this.renderConfig?.renderer === Renderer.WG || this.renderConfig?.renderer === Renderer.GL) {
       this._TVG.render();
       return;
     }
-
+    console.log('render 3');
+    
     const buffer = this._TVG.render();
     const clampedBuffer = new Uint8ClampedArray(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     if (clampedBuffer.length < 1) {
       return;
     }
+    console.log('render 4');
 
     this._imageData = new ImageData(clampedBuffer, this._canvas!.width, this._canvas!.height);
     this._flush();
