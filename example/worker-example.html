@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottie Player Worker Web Component Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        lottie-player-worker {
+            width: 400px;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lottie Player Worker Web Component Example</h1>
+        <p>This example demonstrates the worker-based Lottie player web component.</p>
+        
+        <div class="controls">
+            <button id="loadBtn">Load Animation</button>
+            <button id="playBtn" disabled>Play</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="stopBtn" disabled>Stop</button>
+            <button id="seekBtn" disabled>Seek to Frame 50</button>
+        </div>
+        
+        <lottie-player-worker id="player"></lottie-player-worker>
+        
+        <div class="status" id="status">
+            Status: Initializing...
+        </div>
+    </div>
+
+    <script type="module">
+        import '../dist/lottie-player-worker.js';
+        
+        const player = document.getElementById('player');
+        const statusDiv = document.getElementById('status');
+        const loadBtn = document.getElementById('loadBtn');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const seekBtn = document.getElementById('seekBtn');
+        
+        function updateStatus(message) {
+            statusDiv.textContent = `Status: ${message}`;
+            console.log(message);
+        }
+        
+        function updateButtons() {
+            if (!player) {
+                playBtn.disabled = true;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+                seekBtn.disabled = true;
+                return;
+            }
+            
+            playBtn.disabled = player.currentState === 'playing';
+            pauseBtn.disabled = player.currentState !== 'playing';
+            stopBtn.disabled = player.currentState === 'stopped';
+            seekBtn.disabled = !player.isLoaded;
+        }
+        
+        async function initializePlayer() {
+            try {
+                updateStatus('Player created successfully');
+                updateButtons();
+                
+                player.addEventListener('load', (event) => {
+                    updateStatus(`Animation loaded. Total frames: ${player.totalFrame}`);
+                    updateButtons();
+                });
+                
+                player.addEventListener('play', (event) => {
+                    updateStatus('Animation started playing');
+                    updateButtons();
+                });
+                
+                player.addEventListener('pause', (event) => {
+                    updateStatus('Animation paused');
+                    updateButtons();
+                });
+                
+                player.addEventListener('stop', (event) => {
+                    updateStatus('Animation stopped');
+                    updateButtons();
+                });
+                
+                player.addEventListener('error', (event) => {
+                    updateStatus(`Error: ${event.detail.error}`);
+                });
+                
+            } catch (error) {
+                updateStatus(`Failed to create player: ${error.message}`);
+                console.error('Player creation error:', error);
+            }
+        }
+        
+        loadBtn.addEventListener('click', async () => {
+            try {
+                updateStatus('Loading animation...');
+                await player.load('https://assets2.lottiefiles.com/packages/lf20_UJNc2t.json', 'json');
+            } catch (error) {
+                updateStatus(`Failed to load animation: ${error.message}`);
+                console.error('Load error:', error);
+            }
+        });
+        
+        playBtn.addEventListener('click', async () => {
+            try {
+                await player.play();
+            } catch (error) {
+                updateStatus(`Failed to play: ${error.message}`);
+                console.error('Play error:', error);
+            }
+        });
+        
+        pauseBtn.addEventListener('click', async () => {
+            try {
+                await player.pause();
+            } catch (error) {
+                updateStatus(`Failed to pause: ${error.message}`);
+                console.error('Pause error:', error);
+            }
+        });
+        
+        stopBtn.addEventListener('click', async () => {
+            try {
+                await player.stop();
+            } catch (error) {
+                updateStatus(`Failed to stop: ${error.message}`);
+                console.error('Stop error:', error);
+            }
+        });
+        
+        seekBtn.addEventListener('click', async () => {
+            try {
+                await player.seek(50);
+                updateStatus(`Seeked to frame 50. Current frame: ${player.currentFrame}`);
+            } catch (error) {
+                updateStatus(`Failed to seek: ${error.message}`);
+                console.error('Seek error:', error);
+            }
+        });
+        
+        window.addEventListener('load', initializePlayer);
+    </script>
+</body>
+</html> 
