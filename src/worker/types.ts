@@ -54,6 +54,10 @@ export interface MethodParamsMap {
     instanceId: string;
     loop: boolean;
   };
+  setLooping: {
+    instanceId: string;
+    value: boolean;
+  };
   setDirection: {
     instanceId: string;
     direction: number;
@@ -89,6 +93,7 @@ export interface MethodResultMap {
   resize: void;
   setSpeed: void;
   setLoop: void;
+  setLooping: void;
   setDirection: void;
   setBgColor: void;
   freeze: void;

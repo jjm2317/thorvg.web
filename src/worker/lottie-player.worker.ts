@@ -503,6 +503,19 @@ const commands: Record<string, (request: any) => any> = {
     return instance.setLoop(loop);
   },
 
+  setLooping(request: any) {
+    const instanceId = request.params.instanceId;
+    const value = request.params.value;
+
+    const instance = instancesMap.get(instanceId);
+
+    if (!instance) {
+      throw new Error(`Instance with id ${instanceId} does not exist.`);
+    }
+
+    return instance.setLoop(value);
+  },
+
   setDirection(request: any) {
     const instanceId = request.params.instanceId;
     const direction = request.params.direction;

@@ -9,30 +9,8 @@ import {
   MethodResultMap,
   WorkerConfig
 } from './types';
-import { PlayerInstanceState, PlayerState, Renderer } from '../types';
-import { EventManager } from '../event-manager.js';
-
-
-
-export enum FileType {
-  JSON = 'json',
-  LOT = 'lot',
-  JPG = 'jpg',
-  PNG = 'png',
-  SVG = 'svg',
-}
-export type EventType = 
-  | 'load'
-  | 'play'
-  | 'pause'
-  | 'stop'
-  | 'complete'
-  | 'frame'
-  | 'error'
-  | 'freeze'
-  | 'unfreeze';
-// @ts-ignore
-export type EventListener<T extends EventType> = (event: any) => void;
+import { FileType, PlayerInstanceState, PlayerState, Renderer } from '../types';
+import { EventListener, EventManager, EventType } from '../event-manager.js';
 
 function generateUniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -88,20 +66,6 @@ export class LottiePlayerWorker extends LitElement {
     super();
     this._id = `thorvg-${generateUniqueId()}`;
     console.log("constructor",this._id);
-    
-    // Initialize public properties
-    this.currentState = PlayerState.Loading;
-    this.currentFrame = 0;
-    this.totalFrame = 0;
-    this.speed = 1;
-    this.loop = false;
-    this.direction = 1;
-    this.backgroundColor = '';
-    this.isLoaded = false;
-    this.isPlaying = false;
-    this.isPaused = false;
-    this.isStopped = true;
-    this.isFrozen = false;
   }
 
   public static setWasmUrl(url: string): void {
@@ -152,7 +116,6 @@ export class LottiePlayerWorker extends LitElement {
 
       if (rpcResponse.method === 'onFrame' && result?.instanceId === this._id) {
         this._instanceState.currentFrame = result.event.currentFrame;
-        this.currentFrame = result.event.currentFrame;
         this._eventManager.dispatch(result.event);
       }
 
@@ -253,21 +216,6 @@ export class LottiePlayerWorker extends LitElement {
 
     const result = await this._sendMessage('getInstanceState', { instanceId: this._id });
     this._instanceState = result.state;
-    console.log("updateInstanceState",this._instanceState);
-    
-    // Update public properties
-    this.currentState = this._instanceState.currentState;
-    this.currentFrame = this._instanceState.currentFrame;
-    this.totalFrame = this._instanceState.totalFrame;
-    this.speed = this._instanceState.speed;
-    this.loop = this._instanceState.loop;
-    this.direction = this._instanceState.direction;
-    this.backgroundColor = this._instanceState.backgroundColor;
-    this.isLoaded = this._instanceState.isLoaded;
-    this.isPlaying = this._instanceState.isPlaying;
-    this.isPaused = this._instanceState.isPaused;
-    this.isStopped = this._instanceState.isStopped;
-    this.isFrozen = this._instanceState.isFrozen;
   }
 
   public async load(src: string | object | ArrayBuffer, fileType: FileType): Promise<void> {
@@ -368,18 +316,63 @@ export class LottiePlayerWorker extends LitElement {
     this._eventManager.removeAllEventListeners();
   }
 
-  public currentState: PlayerState = PlayerState.Loading;
-  public currentFrame: number = 0;
-  public totalFrame: number = 0;
-  public speed: number = 1;
-  public loop: boolean = false;
-  public direction: number = 1;
-  public backgroundColor: string = '';
-  public isLoaded: boolean = false;
-  public isPlaying: boolean = false;
-  public isPaused: boolean = false;
-  public isStopped: boolean = true;
-  public isFrozen: boolean = false;
+  // Public properties as getters
+  public get currentState(): PlayerState {
+    return this._instanceState.currentState;
+  }
+
+  public get currentFrame(): number {
+    return this._instanceState.currentFrame;
+  }
+
+  public get totalFrame(): number {
+    return this._instanceState.totalFrame;
+  }
+
+  public get speed(): number {
+    return this._instanceState.speed;
+  }
+
+  public get loop(): boolean {
+    return this._instanceState.loop;
+  }
+
+  public get direction(): number {
+    return this._instanceState.direction;
+  }
+
+  public get backgroundColor(): string {
+    return this._instanceState.backgroundColor;
+  }
+
+  public get isLoaded(): boolean {
+    return this._instanceState.isLoaded;
+  }
+
+  public get isPlaying(): boolean {
+    return this._instanceState.isPlaying;
+  }
+
+  public get isPaused(): boolean {
+    return this._instanceState.isPaused;
+  }
+
+  public get isStopped(): boolean {
+    return this._instanceState.isStopped;
+  }
+
+  public get isFrozen(): boolean {
+    return this._instanceState.isFrozen;
+  }
+
+  /**
+   * Set animation looping.
+   * @param value Loop value.
+   * @since 1.0
+   */
+  public setLooping(value: boolean): void {
+    this._sendMessage('setLooping', { instanceId: this._id, value });
+  }
 
   public addEventListener<T extends EventType>(type: T, listener: EventListener<T>): void {
     this._eventManager.addEventListener(type, listener);
