@@ -9,6 +9,8 @@ export type EventType =
   | 'freeze'
   | 'unfreeze';
 
+
+// @ts-ignore
 export type EventListener<T extends EventType> = (event: any) => void;
 
 export class EventManager {

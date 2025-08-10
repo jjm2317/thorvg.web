@@ -50,10 +50,6 @@ export interface MethodParamsMap {
     instanceId: string;
     speed: number;
   };
-  setLoop: {
-    instanceId: string;
-    loop: boolean;
-  };
   setLooping: {
     instanceId: string;
     value: boolean;
@@ -92,7 +88,6 @@ export interface MethodResultMap {
   seek: void;
   resize: void;
   setSpeed: void;
-  setLoop: void;
   setLooping: void;
   setDirection: void;
   setBgColor: void;
@@ -197,7 +192,7 @@ export interface WorkerInstance {
   seek: (frame: number) => void;
   resize: (width: number, height: number) => void;
   setSpeed: (speed: number) => void;
-  setLoop: (loop: boolean) => void;
+  setLooping: (value: boolean) => void;
   setDirection: (direction: number) => void;
   setBgColor: (color: string) => void;
   freeze: () => void;

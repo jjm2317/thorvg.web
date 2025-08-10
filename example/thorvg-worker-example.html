@@ -89,13 +89,14 @@
     async function createAnimation() {
       const container = document.getElementById('thorvg-container');
       const animation = document.createElement('lottie-player-worker');
+      console.log("fist create element");
       animation.wasmUrl = "../dist/thorvg-wasm.wasm"
       
       animation.style.width = '400px';
       animation.style.height = '400px';
       animation.style.border = '1px solid #ccc';
       animation.autoPlay = true;
-      animation.loop = true;
+      animation.setLooping(true);
       animation.src = "https://lottie.host/6d7dd6e2-ab92-4e98-826a-2f8430768886/NGnHQ6brWA.json";
       
       container.appendChild(animation);
@@ -185,9 +186,9 @@
         await player.seek(parseInt(value));
       }
     }
-    for(let i = 0; i < 10; i ++) {
-      createAnimation();
-    }
+    createAnimation();
+    // for(let i = 0; i < 10; i ++) {
+    // }
 
     window.createAnimation = createAnimation;
     window.playAnimation = playAnimation;

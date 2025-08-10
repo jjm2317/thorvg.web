@@ -250,7 +250,7 @@ const createInstance = async (instanceId: string, config: any, width: number, he
       this.speed = speed;
     },
     
-    setLoop(loop: boolean) {
+    setLooping(loop: boolean) {
       this.loop = loop;
     },
     
@@ -308,6 +308,7 @@ const createInstance = async (instanceId: string, config: any, width: number, he
         (this.direction === 1 && this.currentFrame >= this.totalFrame) ||
         (this.direction === -1 && this.currentFrame <= 0)
       ) {
+        console.log("loop",this.loop);
         if (this.loop) {
           this.currentFrame = this.direction === 1 ? 0 : this.totalFrame;
           this.beginTime = currentTime;
@@ -490,30 +491,17 @@ const commands: Record<string, (request: any) => any> = {
     return instance.setSpeed(speed);
   },
 
-  setLoop(request: any) {
-    const instanceId = request.params.instanceId;
-    const loop = request.params.loop;
-
-    const instance = instancesMap.get(instanceId);
-
-    if (!instance) {
-      throw new Error(`Instance with id ${instanceId} does not exist.`);
-    }
-
-    return instance.setLoop(loop);
-  },
 
   setLooping(request: any) {
     const instanceId = request.params.instanceId;
     const value = request.params.value;
-
     const instance = instancesMap.get(instanceId);
 
     if (!instance) {
       throw new Error(`Instance with id ${instanceId} does not exist.`);
     }
 
-    return instance.setLoop(value);
+    return instance.setLooping(value);
   },
 
   setDirection(request: any) {
@@ -610,7 +598,6 @@ function executeCommand(rpcRequest: RpcRequest<keyof MethodParamsMap>): any {
 
 self.onmessage = async (event: { data: RpcRequest<keyof MethodParamsMap> }) => {
   try {
-    console.log("onmessage",event.data);
     const result = await executeCommand(event.data);
 
     const response: RpcResponse<keyof MethodResultMap> = {

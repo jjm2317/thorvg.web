@@ -16,6 +16,13 @@ function generateUniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
+let resolveInitialized: (value: void | PromiseLike<void>) => void;
+let rejectInitialized: (reason?: any) => void;
+const  isInitialized = new Promise((resolve, reject) => {
+  resolveInitialized = resolve;
+  rejectInitialized = reject;
+});
+
 @customElement('lottie-player-worker')
 export class LottiePlayerWorker extends LitElement {
   @property({ type: String })
@@ -31,10 +38,58 @@ export class LottiePlayerWorker extends LitElement {
   public renderConfig?: {
     enableDevicePixelRatio?: boolean;
     renderer?: Renderer;
-    devicePixelRatio?: number;
-    freezeOnOffscreen?: boolean;
-    autoResize?: boolean;
   };
+
+  @property({ type: Number })
+  public get speed(): number {
+    return this._instanceState.speed;
+  }
+
+  @property({ type: Boolean })
+  public get loop(): boolean {
+    return this._instanceState.loop;
+  }
+  
+  public get currentState(): PlayerState {
+    return this._instanceState.currentState;
+  }
+
+  public get currentFrame(): number {
+    return this._instanceState.currentFrame;
+  }
+
+  public get totalFrame(): number {
+    return this._instanceState.totalFrame;
+  }
+
+  public get direction(): number {
+    return this._instanceState.direction;
+  }
+
+  public get backgroundColor(): string {
+    return this._instanceState.backgroundColor;
+  }
+
+  public get isLoaded(): boolean {
+    return this._instanceState.isLoaded;
+  }
+
+  public get isPlaying(): boolean {
+    return this._instanceState.isPlaying;
+  }
+
+  public get isPaused(): boolean {
+    return this._instanceState.isPaused;
+  }
+
+  public get isStopped(): boolean {
+    return this._instanceState.isStopped;
+  }
+
+  public get isFrozen(): boolean {
+    return this._instanceState.isFrozen;
+  }
+
 
   @property({ type: Boolean })
   public autoPlay: boolean = false;
@@ -65,7 +120,11 @@ export class LottiePlayerWorker extends LitElement {
   public constructor() {
     super();
     this._id = `thorvg-${generateUniqueId()}`;
-    console.log("constructor",this._id);
+    const workerId = 'defaultWorker';
+    this._worker = LottiePlayerWorker._workerManager.getWorker(workerId);
+    LottiePlayerWorker._workerManager.assignAnimationToWorker(this._id, workerId);
+
+    this._worker.addEventListener('message', this._handleWorkerEvent.bind(this));
   }
 
   public static setWasmUrl(url: string): void {
@@ -77,11 +136,9 @@ export class LottiePlayerWorker extends LitElement {
   }
 
   private async _handleWorkerEvent(event: MessageEvent): Promise<void> {
-    console.log("handleWorkerEvent",event);
     const rpcResponse: RpcResponse<any> = event.data;
 
     if (!rpcResponse.id) {
-      console.log("rpcResponse",rpcResponse);
       const result = rpcResponse.result as any;
       if (rpcResponse.method === 'onReady' && result?.instanceId === this._id) {
         this._created = true;
@@ -158,7 +215,6 @@ export class LottiePlayerWorker extends LitElement {
       width: this._canvas.width,
       height: this._canvas.height,
     }, [offscreen]);
-    console.log('create instanceIdddddddddddddd',instanceId);
 
     if (instanceId !== this._id) {
       throw new Error('Instance ID mismatch');
@@ -188,20 +244,16 @@ export class LottiePlayerWorker extends LitElement {
     return new Promise((resolve, reject) => {
       const onMessage = (event: MessageEvent): void => {
         const rpcResponse: RpcResponse<T> = event.data;
-        console.log("onMessage",rpcResponse, 'rpcRequest',rpcRequest);
         if (rpcResponse.id === rpcRequest.id) {
-                if (this._worker) {
-          this._worker.removeEventListener('message', onMessage);
-        }
+          if (this._worker) {
+            this._worker.removeEventListener('message', onMessage);
+          }
 
-        
-
-
-      if (rpcResponse.error) {
-        reject(new Error(`Failed to execute method ${method}: ${rpcResponse.error}`));
-      } else {
-        resolve(rpcResponse.result!);
-      }
+          if (rpcResponse.error) {
+            reject(new Error(`Failed to execute method ${method}: ${rpcResponse.error}`));
+          } else {
+            resolve(rpcResponse.result!);
+          }
         }
       };
 
@@ -271,13 +323,6 @@ export class LottiePlayerWorker extends LitElement {
     await this._updateInstanceState();
   }
 
-  public async setLoop(loop: boolean): Promise<void> {
-    if (!this._created) return;
-
-    await this._sendMessage('setLoop', { instanceId: this._id, loop });
-    await this._updateInstanceState();
-  }
-
   public async setDirection(direction: number): Promise<void> {
     if (!this._created) return;
 
@@ -290,6 +335,11 @@ export class LottiePlayerWorker extends LitElement {
 
     await this._sendMessage('setBgColor', { instanceId: this._id, color });
     await this._updateInstanceState();
+  }
+
+  public setLooping(value: boolean): void {
+    if(!this._created) return;
+    this._sendMessage('setLooping', { instanceId: this._id, value });
   }
 
   public async freeze(): Promise<void> {
@@ -316,64 +366,6 @@ export class LottiePlayerWorker extends LitElement {
     this._eventManager.removeAllEventListeners();
   }
 
-  // Public properties as getters
-  public get currentState(): PlayerState {
-    return this._instanceState.currentState;
-  }
-
-  public get currentFrame(): number {
-    return this._instanceState.currentFrame;
-  }
-
-  public get totalFrame(): number {
-    return this._instanceState.totalFrame;
-  }
-
-  public get speed(): number {
-    return this._instanceState.speed;
-  }
-
-  public get loop(): boolean {
-    return this._instanceState.loop;
-  }
-
-  public get direction(): number {
-    return this._instanceState.direction;
-  }
-
-  public get backgroundColor(): string {
-    return this._instanceState.backgroundColor;
-  }
-
-  public get isLoaded(): boolean {
-    return this._instanceState.isLoaded;
-  }
-
-  public get isPlaying(): boolean {
-    return this._instanceState.isPlaying;
-  }
-
-  public get isPaused(): boolean {
-    return this._instanceState.isPaused;
-  }
-
-  public get isStopped(): boolean {
-    return this._instanceState.isStopped;
-  }
-
-  public get isFrozen(): boolean {
-    return this._instanceState.isFrozen;
-  }
-
-  /**
-   * Set animation looping.
-   * @param value Loop value.
-   * @since 1.0
-   */
-  public setLooping(value: boolean): void {
-    this._sendMessage('setLooping', { instanceId: this._id, value });
-  }
-
   public addEventListener<T extends EventType>(type: T, listener: EventListener<T>): void {
     this._eventManager.addEventListener(type, listener);
   }
@@ -383,6 +375,7 @@ export class LottiePlayerWorker extends LitElement {
   }
 
   protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+    console.log("firstUpdated");
     this._canvas = this.querySelector('.thorvg') as HTMLCanvasElement;
     
     this._canvas.id = `thorvg-${uuidv4().replaceAll('-', '').substring(0, 6)}`;
@@ -413,18 +406,11 @@ export class LottiePlayerWorker extends LitElement {
   }
 
   private async _init(): Promise<void> {
-    console.log(this._canvas,this._worker);
     if (!this._canvas) {
       return;
     }
 
     try {
-      const workerId = 'defaultWorker';
-      this._worker = LottiePlayerWorker._workerManager.getWorker(workerId);
-      LottiePlayerWorker._workerManager.assignAnimationToWorker(this._id, workerId);
-
-      this._worker.addEventListener('message', this._handleWorkerEvent.bind(this));
-
       if (!this._canvas) {
         throw new Error('Canvas not found');
       }
@@ -442,18 +428,18 @@ export class LottiePlayerWorker extends LitElement {
         backgroundColor: this.backgroundColor || '',
         wasmUrl: this.wasmUrl,
       });
-      console.log('after create',this.src);
-
-      console.log('autoPlay1',this.autoPlay);
+      
       if (this.src) {
         await this.load(this.src, this.fileType);
       }
-      console.log('autoPlay',this.autoPlay);
+      console.log('after create');
+      resolveInitialized();
+
       if(this.autoPlay) {
-        
         this.play();
       }
     } catch (error) {
+      rejectInitialized(error);
       this._instanceState.currentState = PlayerState.Error;
     }
   }
