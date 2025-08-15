@@ -9,7 +9,7 @@ import {
   MethodResultMap,
   WorkerConfig
 } from './types';
-import { FileType, PlayerInstanceState, PlayerState, Renderer } from '../types';
+import { FileType, PlayerInstanceState, PlayerState, Renderer, PlayMode } from '../types';
 import { EventListener, EventManager, EventType } from '../event-manager.js';
 
 function generateUniqueId(): string {
@@ -45,29 +45,91 @@ export class LottiePlayerWorker extends LitElement {
     return this._instanceState.speed;
   }
 
+  public set speed(value: number) {
+    this._instanceState.speed = value;
+    if (this._created) {
+      this._sendMessage('setSpeed', { instanceId: this._id, speed: value });
+    }
+  }
+
   @property({ type: Boolean })
   public get loop(): boolean {
     return this._instanceState.loop;
   }
-  
-  public get currentState(): PlayerState {
-    return this._instanceState.currentState;
+
+  public set loop(value: boolean) {
+    this._instanceState.loop = value;
+    if (this._created) {
+      this._sendMessage('setLooping', { instanceId: this._id, value });
+    }
   }
 
-  public get currentFrame(): number {
-    return this._instanceState.currentFrame;
+  @property({ type: Number })
+  public get count(): number | undefined {
+    return this._instanceState.count;
   }
 
-  public get totalFrame(): number {
-    return this._instanceState.totalFrame;
+  public set count(value: number | undefined) {
+    this._instanceState.count = value;
+    // Note: count property might need worker-side implementation
   }
 
+  @property({ type: Number })
   public get direction(): number {
     return this._instanceState.direction;
   }
 
+  public set direction(value: number) {
+    this._instanceState.direction = value;
+    if (this._created) {
+      this._sendMessage('setDirection', { instanceId: this._id, direction: value });
+    }
+  }
+
+  @property()
+  public get mode(): PlayMode {
+    return this._instanceState.mode;
+  }
+
+  public set mode(value: PlayMode) {
+    this._instanceState.mode = value;
+    // Note: mode property might need worker-side implementation
+  }
+
+  @property()
+  public get intermission(): number {
+    return this._instanceState.intermission;
+  }
+
+  public set intermission(value: number) {
+    this._instanceState.intermission = value;
+    // Note: intermission property might need worker-side implementation
+  }
+
+  @property({ type: Number })
+  public get totalFrame(): number {
+    return this._instanceState.totalFrame;
+  }
+
+  @property({ type: Number })
+  public get currentFrame(): number {
+    return this._instanceState.currentFrame;
+  }
+
+  @property({ type: Number })
+  public get currentState(): PlayerState {
+    return this._instanceState.currentState;
+  }
+
   public get backgroundColor(): string {
     return this._instanceState.backgroundColor;
+  }
+
+  public set backgroundColor(value: string) {
+    this._instanceState.backgroundColor = value;
+    if (this._created) {
+      this._sendMessage('setBgColor', { instanceId: this._id, color: value });
+    }
   }
 
   public get isLoaded(): boolean {
@@ -90,6 +152,9 @@ export class LottiePlayerWorker extends LitElement {
     return this._instanceState.isFrozen;
   }
 
+  public get size(): Float32Array {
+    return Float32Array.from(this._instanceState.size || [0, 0]);
+  }
 
   @property({ type: Boolean })
   public autoPlay: boolean = false;
@@ -115,6 +180,10 @@ export class LottiePlayerWorker extends LitElement {
     isPaused: false,
     isStopped: true,
     isFrozen: false,
+    count: undefined,
+    mode: PlayMode.Normal,
+    intermission: 1,
+    size: [0, 0],
   };
 
   public constructor() {

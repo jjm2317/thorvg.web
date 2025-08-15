@@ -22,6 +22,11 @@ export enum Renderer {
   GL = 'gl',
 }
 
+export enum PlayMode {
+  Bounce = 'bounce',
+  Normal = 'normal',
+}
+
 export type RenderConfig = {
   enableDevicePixelRatio?: boolean;
   renderer?: Renderer;
@@ -40,6 +45,10 @@ export interface PlayerInstanceState {
   isPaused: boolean;
   isStopped: boolean;
   isFrozen: boolean;
+  count?: number;
+  mode: PlayMode;
+  intermission: number;
+  size: [number, number];
 }
 
 export enum InitStatus {
