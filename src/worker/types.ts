@@ -1,4 +1,4 @@
-import { PlayerState, FileType, RenderConfig, PlayerInstanceState } from '../types';
+import { PlayerState, FileType, RenderConfig, PlayerInstanceState, PlayMode } from '../types';
 
 export interface RpcRequest<T extends keyof MethodParamsMap> {
   id: string;
@@ -63,9 +63,6 @@ export interface MethodParamsMap {
     color: string;
   };
   freeze: {
-    instanceId: string;
-  };
-  unfreeze: {
     instanceId: string;
   };
   getInstanceState: {
@@ -176,11 +173,12 @@ export interface WorkerInstance {
   loop: boolean;
   direction: number;
   backgroundColor: string;
-  isLoaded: boolean;
-  isPlaying: boolean;
-  isPaused: boolean;
-  isStopped: boolean;
-  isFrozen: boolean;
+  count?: number;
+  mode: PlayMode;
+  intermission: number;
+  size: [number, number];
+  fileType: FileType;
+  autoPlay: boolean;
   tvgInstance: TvgInstance;
   beginTime: number;
   counter: number;

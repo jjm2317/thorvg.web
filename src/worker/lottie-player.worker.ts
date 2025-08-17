@@ -7,7 +7,7 @@ import {
   MethodResultMap,
   WorkerInstance
 } from './types';
-import { PlayerInstanceState, PlayerState, FileType, Renderer, InitStatus } from '../types';
+import { PlayerInstanceState, PlayerState, FileType, Renderer, InitStatus, PlayMode } from '../types';
 
 let _module: any;
 let _moduleRequested: boolean = false;
@@ -150,18 +150,20 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     loop: config.loop || false,
     direction: 1,
     backgroundColor: config.backgroundColor || '',
-    isLoaded: false,
-    isPlaying: false,
-    isPaused: false,
-    isStopped: true,
-    isFrozen: false,
     tvgInstance,
     beginTime: Date.now(),
     counter: 1,
     timer: null as any,
+    count: undefined,
+    mode: PlayMode.Normal,
+    intermission: 1,
+    size: [0, 0] as [number, number],
+    fileType: FileType.JSON,
+    autoPlay: config.autoPlay || false,
     
     async load(src: any, fileType: FileType) {
       try {
+        console.log("load",src,fileType);
         const data = await _parseSrc(src, fileType);
         const isLoaded = this.tvgInstance.load(data, fileType, this.width, this.height, '');
         
@@ -169,7 +171,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
           throw new Error('Unable to load animation. Error: ' + this.tvgInstance.error());
         }
         
-        this.isLoaded = true;
         this.currentState = PlayerState.Stopped;
         this.totalFrame = this.tvgInstance.totalFrame();
         
@@ -181,9 +182,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     },
     
     play() {
-      this.isPlaying = true;
-      this.isPaused = false;
-      this.isStopped = false;
       this.currentState = PlayerState.Playing;
       this.beginTime = Date.now();
       
@@ -197,9 +195,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     },
     
     pause() {
-      this.isPlaying = false;
-      this.isPaused = true;
-      this.isStopped = false;
       this.currentState = PlayerState.Paused;
       
       if (this.timer) {
@@ -211,9 +206,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     },
     
     stop() {
-      this.isPlaying = false;
-      this.isPaused = false;
-      this.isStopped = true;
       this.currentState = PlayerState.Stopped;
       this.currentFrame = 0;
       
@@ -264,7 +256,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     },
     
     freeze() {
-      this.isFrozen = true;
       this.currentState = PlayerState.Frozen;
       
       if (this.timer) {
@@ -276,7 +267,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     },
     
     unfreeze() {
-      this.isFrozen = false;
       this.currentState = PlayerState.Stopped;
       
       sendEvent(instanceId, 'unfreeze', { type: 'unfreeze' });
@@ -290,7 +280,7 @@ const createInstance = async (instanceId: string, config: any, width: number, he
       const currentTime = Date.now();
       const elapsed = (currentTime - this.beginTime) / 1000;
       const duration = this.tvgInstance.duration();
-      
+      console.log("duration",duration,this.totalFrame,this.speed);
       if (duration <= 0) {
         return;
       }
@@ -331,6 +321,7 @@ const createInstance = async (instanceId: string, config: any, width: number, he
       
       this.tvgInstance.frame(Math.floor(this.currentFrame));
       this.render();
+      console.log("after render")
     },
     
     render() {
@@ -571,11 +562,12 @@ const commands: Record<string, (request: any) => any> = {
       loop: instance.loop,
       direction: instance.direction,
       backgroundColor: instance.backgroundColor,
-      isLoaded: instance.isLoaded,
-      isPlaying: instance.isPlaying,
-      isPaused: instance.isPaused,
-      isStopped: instance.isStopped,
-      isFrozen: instance.isFrozen,
+      count: instance.count,
+      mode: instance.mode,
+      intermission: instance.intermission,
+      size: instance.size,
+      fileType: instance.fileType,
+      autoPlay: instance.autoPlay,
     };
 
     return { state };

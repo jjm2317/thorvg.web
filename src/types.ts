@@ -40,15 +40,14 @@ export interface PlayerInstanceState {
   loop: boolean;
   direction: number;
   backgroundColor: string;
-  isLoaded: boolean;
-  isPlaying: boolean;
-  isPaused: boolean;
-  isStopped: boolean;
-  isFrozen: boolean;
   count?: number;
   mode: PlayMode;
   intermission: number;
   size: [number, number];
+  src?: string;
+  fileType: FileType;
+  renderConfig?: RenderConfig;
+  autoPlay: boolean;
 }
 
 export enum InitStatus {

@@ -96,7 +96,8 @@
       animation.style.height = '400px';
       animation.style.border = '1px solid #ccc';
       animation.autoPlay = true;
-      animation.setLooping(true);
+      animation.loop = true;
+      await animation.setLooping(true);
       animation.src = "https://lottie.host/6d7dd6e2-ab92-4e98-826a-2f8430768886/NGnHQ6brWA.json";
       
       container.appendChild(animation);
@@ -171,7 +172,7 @@
 
     async function toggleLoop(event) {
       if (player) {
-        await player.setLoop(event.target.checked);
+        await player.setLooping(event.target.checked);
       }
     }
 

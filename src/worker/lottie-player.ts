@@ -16,30 +16,45 @@ function generateUniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
-let resolveInitialized: (value: void | PromiseLike<void>) => void;
-let rejectInitialized: (reason?: any) => void;
-const  isInitialized = new Promise((resolve, reject) => {
-  resolveInitialized = resolve;
-  rejectInitialized = reject;
-});
-
 @customElement('lottie-player-worker')
 export class LottiePlayerWorker extends LitElement {
   @property({ type: String })
-  public src?: string;
+  public src: string | undefined;
+
+  private static _wasmUrl: string = '';
 
   @property({ type: String })
-  public wasmUrl?: string;
+  public get wasmUrl(): string {
+    return LottiePlayerWorker._wasmUrl;
+  }
+
+  public set wasmUrl(value: string) {
+    LottiePlayerWorker._wasmUrl = value;
+  }
 
   @property({ type: String })
-  public fileType: FileType = FileType.JSON;
+  public get fileType(): FileType {
+    return this._instanceState.fileType;
+  }
+  public set fileType(value: FileType) {
+    this._instanceState.fileType = value;
+  }
 
   @property({ type: Object })
-  public renderConfig?: {
+  public get renderConfig(): {
     enableDevicePixelRatio?: boolean;
     renderer?: Renderer;
-  };
+  } | undefined {
+    return this._instanceState.renderConfig;
+  }
 
+  public set renderConfig(value: {
+    enableDevicePixelRatio?: boolean;
+    renderer?: Renderer;
+  } | undefined) {
+    this._instanceState.renderConfig = value;
+  }
+  
   @property({ type: Number })
   public get speed(): number {
     return this._instanceState.speed;
@@ -52,6 +67,27 @@ export class LottiePlayerWorker extends LitElement {
     }
   }
 
+
+  @property({ type: Boolean })
+  public get autoPlay(): boolean {
+    return this._instanceState.autoPlay;
+  }
+
+  public set autoPlay(value: boolean) {
+    this._instanceState.autoPlay = value;
+  }
+
+  @property({ type: Number })
+  public get count(): number | undefined {
+    return this._instanceState.count;
+  }
+
+  public set count(value: number | undefined) {
+    this._instanceState.count = value;
+  }
+
+
+
   @property({ type: Boolean })
   public get loop(): boolean {
     return this._instanceState.loop;
@@ -62,16 +98,6 @@ export class LottiePlayerWorker extends LitElement {
     if (this._created) {
       this._sendMessage('setLooping', { instanceId: this._id, value });
     }
-  }
-
-  @property({ type: Number })
-  public get count(): number | undefined {
-    return this._instanceState.count;
-  }
-
-  public set count(value: number | undefined) {
-    this._instanceState.count = value;
-    // Note: count property might need worker-side implementation
   }
 
   @property({ type: Number })
@@ -93,7 +119,6 @@ export class LottiePlayerWorker extends LitElement {
 
   public set mode(value: PlayMode) {
     this._instanceState.mode = value;
-    // Note: mode property might need worker-side implementation
   }
 
   @property()
@@ -103,7 +128,6 @@ export class LottiePlayerWorker extends LitElement {
 
   public set intermission(value: number) {
     this._instanceState.intermission = value;
-    // Note: intermission property might need worker-side implementation
   }
 
   @property({ type: Number })
@@ -132,33 +156,9 @@ export class LottiePlayerWorker extends LitElement {
     }
   }
 
-  public get isLoaded(): boolean {
-    return this._instanceState.isLoaded;
-  }
-
-  public get isPlaying(): boolean {
-    return this._instanceState.isPlaying;
-  }
-
-  public get isPaused(): boolean {
-    return this._instanceState.isPaused;
-  }
-
-  public get isStopped(): boolean {
-    return this._instanceState.isStopped;
-  }
-
-  public get isFrozen(): boolean {
-    return this._instanceState.isFrozen;
-  }
-
   public get size(): Float32Array {
     return Float32Array.from(this._instanceState.size || [0, 0]);
   }
-
-  @property({ type: Boolean })
-  public autoPlay: boolean = false;
-
   private static readonly _workerManager = new WorkerManager();
   private readonly _eventManager = new EventManager();
   private readonly _id: string;
@@ -175,15 +175,14 @@ export class LottiePlayerWorker extends LitElement {
     loop: false,
     direction: 1,
     backgroundColor: '',
-    isLoaded: false,
-    isPlaying: false,
-    isPaused: false,
-    isStopped: true,
-    isFrozen: false,
     count: undefined,
     mode: PlayMode.Normal,
     intermission: 1,
     size: [0, 0],
+    src: undefined,
+    fileType: FileType.JSON,
+    renderConfig: undefined,
+    autoPlay: false,
   };
 
   public constructor() {
@@ -254,11 +253,6 @@ export class LottiePlayerWorker extends LitElement {
         await this._updateInstanceState();
         this._eventManager.dispatch(result.event);
       }
-
-      if (rpcResponse.method === 'onUnfreeze' && result?.instanceId === this._id) {
-        await this._updateInstanceState();
-        this._eventManager.dispatch(result.event);
-      }
     }
   }
 
@@ -274,7 +268,15 @@ export class LottiePlayerWorker extends LitElement {
     } else {
       offscreen = this._canvas;
     }
-
+    console.log("before sendMessage",{
+      instanceId: this._id,
+      config: {
+        ...config,
+        canvas: offscreen,
+      },
+      width: this._canvas.width,
+      height: this._canvas.height,
+    });
     const { instanceId } = await this._sendMessage('create', {
       instanceId: this._id,
       config: {
@@ -418,13 +420,6 @@ export class LottiePlayerWorker extends LitElement {
     await this._updateInstanceState();
   }
 
-  public async unfreeze(): Promise<void> {
-    if (!this._created) return;
-
-    await this._sendMessage('unfreeze', { instanceId: this._id });
-    await this._updateInstanceState();
-  }
-
   public async destroy(): Promise<void> {
     if (!this._created) return;
 
@@ -484,7 +479,18 @@ export class LottiePlayerWorker extends LitElement {
         throw new Error('Canvas not found');
       }
       LottiePlayerWorker.setWasmUrl(this.wasmUrl || '');
-      console.log('before create');
+      console.log('before create 11',{
+        canvas: this._canvas,
+        renderConfig: {
+          ...this.renderConfig,
+        },
+        autoPlay: this.autoPlay,
+        loop: this.loop,
+        speed: this.speed,
+        direction: this.direction,
+        backgroundColor: this.backgroundColor || '',
+        wasmUrl: this.wasmUrl,
+      });
       await this._create({
         canvas: this._canvas,
         renderConfig: {
@@ -497,18 +503,15 @@ export class LottiePlayerWorker extends LitElement {
         backgroundColor: this.backgroundColor || '',
         wasmUrl: this.wasmUrl,
       });
-      
+
       if (this.src) {
         await this.load(this.src, this.fileType);
       }
-      console.log('after create');
-      resolveInitialized();
 
       if(this.autoPlay) {
         this.play();
       }
     } catch (error) {
-      rejectInitialized(error);
       this._instanceState.currentState = PlayerState.Error;
     }
   }
