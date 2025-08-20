@@ -503,6 +503,7 @@ export class LottiePlayer extends LitElement {
   }
 
   private async _update(): Promise<boolean> {
+    console.log("update mainthread",this.currentState);
     if (this.currentState !== PlayerState.Playing) {
       return false;
     }
@@ -590,6 +591,7 @@ export class LottiePlayer extends LitElement {
     if (this.currentState === PlayerState.Playing) {
       return;
     }
+    console.log("play",this._observable);
 
     if (this._observable) {
       this.currentState = PlayerState.Playing;

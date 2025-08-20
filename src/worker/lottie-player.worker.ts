@@ -256,8 +256,10 @@ const createInstance = async (instanceId: string, config: any, width: number, he
     },
     
     freeze() {
+      console.log("freeze called in worker",this.currentState);
       this.currentState = PlayerState.Frozen;
       
+      console.log(this.timer,"this.timer")
       if (this.timer) {
         clearInterval(this.timer);
         this.timer = null;
@@ -265,14 +267,9 @@ const createInstance = async (instanceId: string, config: any, width: number, he
       
       sendEvent(instanceId, 'freeze', { type: 'freeze' });
     },
-    
-    unfreeze() {
-      this.currentState = PlayerState.Stopped;
-      
-      sendEvent(instanceId, 'unfreeze', { type: 'unfreeze' });
-    },
-    
+
     update() {
+      console.log("update",this.currentState);
       if (this.currentState !== PlayerState.Playing) {
         return;
       }
@@ -280,7 +277,7 @@ const createInstance = async (instanceId: string, config: any, width: number, he
       const currentTime = Date.now();
       const elapsed = (currentTime - this.beginTime) / 1000;
       const duration = this.tvgInstance.duration();
-      console.log("duration",duration,this.totalFrame,this.speed);
+
       if (duration <= 0) {
         return;
       }
@@ -298,7 +295,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
         (this.direction === 1 && this.currentFrame >= this.totalFrame) ||
         (this.direction === -1 && this.currentFrame <= 0)
       ) {
-        console.log("loop",this.loop);
         if (this.loop) {
           this.currentFrame = this.direction === 1 ? 0 : this.totalFrame;
           this.beginTime = currentTime;
@@ -321,7 +317,6 @@ const createInstance = async (instanceId: string, config: any, width: number, he
       
       this.tvgInstance.frame(Math.floor(this.currentFrame));
       this.render();
-      console.log("after render")
     },
     
     render() {
@@ -531,18 +526,6 @@ const commands: Record<string, (request: any) => any> = {
     }
 
     return instance.freeze();
-  },
-
-  unfreeze(request: any) {
-    const instanceId = request.params.instanceId;
-
-    const instance = instancesMap.get(instanceId);
-
-    if (!instance) {
-      throw new Error(`Instance with id ${instanceId} does not exist.`);
-    }
-
-    return instance.unfreeze();
   },
 
   getInstanceState(request: any) {

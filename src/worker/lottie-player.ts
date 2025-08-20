@@ -166,6 +166,7 @@ export class LottiePlayerWorker extends LitElement {
   private _canvas?: HTMLCanvasElement;
   private _created: boolean = false;
   private _observer?: IntersectionObserver;
+  private _observable: boolean = false;
 
   private _instanceState: PlayerInstanceState = {
     currentState: PlayerState.Loading,
@@ -415,6 +416,7 @@ export class LottiePlayerWorker extends LitElement {
 
   public async freeze(): Promise<void> {
     if (!this._created) return;
+    console.log("freeze called",this.currentState);
 
     await this._sendMessage('freeze', { instanceId: this._id });
     await this._updateInstanceState();
@@ -459,7 +461,8 @@ export class LottiePlayerWorker extends LitElement {
   private _observerCallback(entries: IntersectionObserverEntry[]) {
     const entry = entries[0];
     const target = entry.target as LottiePlayerWorker;
-
+    console.log("observerCallback",target.currentState,entry.isIntersecting);
+    this._observable = entry.isIntersecting;
     if (entry.isIntersecting) {
       if (target.currentState === PlayerState.Frozen) {
         target.play();
@@ -509,7 +512,11 @@ export class LottiePlayerWorker extends LitElement {
       }
 
       if(this.autoPlay) {
-        this.play();
+        if(this._observable) {
+          this.play();
+        }else {
+          this.freeze();
+        }
       }
     } catch (error) {
       this._instanceState.currentState = PlayerState.Error;

@@ -194,7 +194,6 @@ export interface WorkerInstance {
   setDirection: (direction: number) => void;
   setBgColor: (color: string) => void;
   freeze: () => void;
-  unfreeze: () => void;
   update: () => void;
   render: () => void;
   destroy: () => void;
